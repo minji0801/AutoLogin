@@ -13,12 +13,12 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    "user": "test",
-    //"user": "sa",
+    //"user": "test",
+    "user": "sa",
     "password": "qw12qw12",
     //"server"    : "192.168.0.135",
-    "server": "192.168.137.1",
-    //"server": "192.168.0.134",
+    // "server": "192.168.137.1",
+    "server": "192.168.0.134",
     // "server": "192.168.35.115",
     "port": 1433,
     "database": "aTEST",
@@ -80,14 +80,26 @@ router.get('/viewMail', function (req, res, next) {
 
 router.get('/contentMail', function (req, res, next) {
     console.log('content mail');
-    
+
     res.render('content_mail');
 });
 
 router.get('/signup', function (req, res, next) {
     console.log('sign up');
-    
+
     res.render('signup');
+});
+
+router.get('/login', function (req, res, next) {
+    console.log('login');
+
+    res.render('login');
+});
+
+router.get('/welcome', function (req, res, next) {
+    console.log('welcome');
+
+    res.render('welcome');
 });
 
 //리치 에디트 글 화면 이후 글 작성으로 넘어갈 화면임

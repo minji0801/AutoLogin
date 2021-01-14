@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인화면</title>
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <style>
+        * {
+            font-family: 'Jua', sans-serif;
+        }
+
+        .wrap {
+            width: 300px;
+            margin: auto;
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+
+        .m-t-20 {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <h1>Welcome!</h1>
+        <form action="/api/logout" method="post">
+            <input class="m-t-20" type="submit" value="Log Out" />
+        </form>
+    </div>
+</body>
+
+</html>

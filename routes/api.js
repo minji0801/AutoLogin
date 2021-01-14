@@ -3,6 +3,7 @@ const { json } = require('body-parser');
 const { request } = require('express');
 var express = require('express');
 var router = express.Router();
+
 const mssql = require('mssql');
 const multer = require('multer');
 const path = require('path');
@@ -30,11 +31,11 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    "user": "test",
-    //"user": "sa",
+    //"user": "test",
+    "user": "sa",
     "password": "qw12qw12",
-    "server": "192.168.137.1",
-    //"server": "192.168.0.134",
+    //"server": "192.168.137.1",
+    "server": "192.168.0.134",
     // "server": "192.168.35.115",
     //"server"    : "192.168.0.135",
     "port": 1433,
@@ -45,45 +46,6 @@ const config = {
         enableArithAbort: true
     }
 }
-
-// 자동로그인 - 사용자 회원가입
-router.post('/signup', function (req, res, next) {
-    try {
-        console.log('api/signup!!');
-    
-        var id = req.body.id;
-        var pw = req.body.pw;
-
-        mssql.connect(config, function (err) {
-
-            console.log('Connect');
-            var request = new mssql.Request();
-
-            var checkId = "SELECT * FROM tALU WHERE id = '" + id +"'";
-
-            var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + pw + "');";
-
-            request.query(checkId, function (err, result) {
-
-                if (result.rowsAffected[0] == 0) {
-                    
-                    // 없는 아이디 -> 회원가입 가능
-                    request.query(insertData, function (err, result) {
-
-                        res.json({ data: 'OK' });
-
-                    })
-                } else {
-                    // 아이디 존재 -> 회원가입 불가능
-                    res.json({ data: 'NO' });
-                }
-            })
-        });
-    }
-    catch (err) {
-        console.log(err);
-    }
-});
 
 // 수신메일 데이터 (페이징해서) 가져오기
 router.post('/getMailData', function (req, res, next) {
