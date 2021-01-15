@@ -21,17 +21,63 @@
             border: 1px solid black;
         }
 
-        .m-t-20 {
-            margin-top: 20px;
+        .username {
+            font-size: 25px;
+        }
+
+        .m-t-10 {
+            margin-top: 10px;
+        }
+
+        .m-t-40 {
+            margin-top: 40px;
+        }
+
+        .btn {
+            width: 300px;
+            height: 30px;
+            cursor: pointer;
+            background-color:lightgray;
+            border-radius: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
         }
     </style>
+    <script>
+        $(function() {
+            $.ajax({
+                type: 'GET',
+                url: '/users/getJWT',
+                dataType: 'json',
+                success: function (response) {
+
+                    console.log(response.data);
+
+                    if (response.data == 'NO') {
+                        alert('user 쿠키가 없습니다.');
+
+                    } else if (response.data == 'INCORRECT') {
+                        alert('세션에 존재하는 유저는 이미 삭제된 유저입니다.');
+
+                    } else {
+                        // 사용자 이름 넣어서 보여주기
+                        $('#name').text(response.name);
+                    }
+                }
+            });
+        })
+    </script>
 </head>
 
 <body>
     <div class="wrap">
         <h1>Welcome!</h1>
-        <form action="/api/logout" method="post">
-            <input class="m-t-20" type="submit" value="Log Out" />
+        <span class="username" id="name"></span>님
+        <hr class="m-t-40">
+        <form action="/users/logout" method="post">
+            <input class="m-t-10 btn" type="submit" value="로그아웃" />
         </form>
     </div>
 </body>

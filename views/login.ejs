@@ -14,7 +14,7 @@
         }
 
         .wrap {
-            /* visibility: hidden; */
+            visibility: hidden;
             width: 300px;
             margin: auto;
             text-align: center;
@@ -30,19 +30,53 @@
             margin-top: 20px;
         }
 
+        input {
+            width: 300px;
+            height: 30px;
+            box-sizing: border-box;
+        }
+
         .btn {
             width: 300px;
+            height: 30px;
             cursor: pointer;
+            border: none;
+        }
+
+        .login {
+            background-color:lightgray;
+            border-radius: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
         }
 
         .naver-login-btn {
             background-color: limegreen;
             color: white;
         }
+
+        .kakao-login-btn {
+            background-color: gold;
+            color: black;
+        }
+
+        .facebook-login-btn {
+            background-color: blue;
+            color: white;
+        }
+
+        .google-login-btn {
+            background-color: red;
+            color: white;
+        }
+        .signup {
+            background-color:lightgray;
+        }
     </style>
     <script>
         $(function () {
-            /* $.ajax({
+            $.ajax({
                 type: 'GET',
                 url: '/users/getJWT',
                 dataType: 'json',
@@ -54,7 +88,7 @@
                         $('.wrap').css('visibility', 'visible');
 
                     } else if (response.data == 'INCORRECT') {
-                        alert('세션에 존재하는 유저는 이미 삭제된 유저입니다.');
+                        alert('세션에 존재하는 유저는 이미 삭제된 유저입니다. 쿠키를 지워주세요.');
                         $('.wrap').css('visibility', 'visible');
 
                     } else {
@@ -62,7 +96,7 @@
                         location.href='/welcome';
                     }
                 }
-            }); */
+            });
         })
 
         function goSignUp() {
@@ -70,48 +104,55 @@
         }
 
         function naverLogin() {
-            /* $.ajax({
-                type: 'GET',
-                url: '/users/naverLogin',
-                dataType: 'json',
-                success: function (response) {
-                    var data = JSON.stringify(response.data);
-                    var url = JSON.stringify(response.url).replace(/"/g, "");
-                    if (data == '"There is"') {
-                        // 자동로그인
-                        location.href = url;
-                    } else if (data == '"None"') {
-                        // 로그인 영역 보여주기
-                        location.href = url;
-                    }
-                }
-            }); */
             location.href = '/users/naverlogin';
+        }
+
+        function kakaoLogin() {
+            location.href = '/users/kakaologin';
+        }
+
+        function facebookLogin() {
+            alert('개발중입니다.');
+            //location.href = '/users/facebooklogin';
+        }
+
+        function googleLogin() {
+            alert('개발중입니다.');
+            //location.href = '/users/googlelogin';
         }
     </script>
 </head>
 
 <body>
     <div class="wrap">
-        로그인
+        <h1>LOGIN</h1>
         <form action="/users/emaillogin" method="post">
-            <div class="m-t-20">
-                <label>이메일:</label>
-                <input type="text" name="id" />
+            <div>
+                <input type="text" name="id" placeholder="이메일"/>
             </div>
             <div class="m-t-10">
-                <label>비밀번호:</label>
-                <input type="password" name="pw" />
+                <input type="password" name="pw" placeholder="비밀번호"/>
             </div>
-            <div class="m-t-20">
-                <input class="btn" type="submit" value="Log In" />
+            <div class="m-t-10">
+                <input class="btn login" type="submit" value="로그인" />
             </div>
         </form>
-        <div class="m-t-20">
-            <button class="btn" onclick="goSignUp()">Sign up</button>
-        </div>
-        <div class="m-t-20">
+        <hr class="m-t-20">
+        <div class="m-t-10">
             <button class="btn naver-login-btn" onclick="naverLogin()">네이버 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn kakao-login-btn" onclick="kakaoLogin()">카카오 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn facebook-login-btn" onclick="facebookLogin()">페이스북 로그인</button>
+        </div>
+        <div class="m-t-10">
+            <button class="btn google-login-btn" onclick="googleLogin()">구글 로그인</button>
+        </div>
+        <hr class="m-t-20">
+        <div class="m-t-20">
+            <button class="btn signup" onclick="goSignUp()">회원가입</button>
         </div>
     </div>
 </body>

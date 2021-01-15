@@ -92,6 +92,8 @@ router.get('/signup', function (req, res, next) {
 
 router.get('/login', function (req, res, next) {
     console.log('login');
+    console.log(req.protocol);
+    console.log(req.secure);
 
     res.render('login');
 });

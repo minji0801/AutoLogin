@@ -1,5 +1,6 @@
 var createError = require('http-errors');
 var express = require('express');
+var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
@@ -9,6 +10,12 @@ var usersRouter = require('./routes/users');
 var apiRouter = require('./routes/api');
 
 const request = require('request');
+
+// SSL 인증서
+const options = {
+    key: fs.readFileSync('public/keys/key.pem'),
+    cert: fs.readFileSync('public/keys/server.crt')
+};
 
 var app = express();
 
@@ -28,10 +35,15 @@ app.use('/users', usersRouter);
 app.use('/api', apiRouter);
 
 app.all('/*', function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "X-Requested-With");
-  next();
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    if (!req.secure) {
+        res.redirect("https://" + req.headers.host + req.url);
+    } else {
+        next();
+    }
 });
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
@@ -51,14 +63,21 @@ app.use(function(err, req, res, next) {
 
 /////////////////////////// 통신부
 
-
+// http 8087
 var server = require('http').createServer(app);
-const io = require('socket.io')(server);
-
+var io = require('socket.io')(server);
 server.listen(8087, function() {
     console.log('Socket IO server listening on port 8087');
 });
 
+// https 443
+/* var server = require('https').createServer(options, app);
+
+var io = require('socket.io')(server);
+
+server.listen(443, function() {
+    console.log('Socket IO server listening on port 443');
+}); */
 
 io.on('connection', function(socket) {
   console.log('Socket id ' + socket.id + 'Connected');
