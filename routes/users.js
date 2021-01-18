@@ -131,7 +131,7 @@ router.post('/signup', function (req, res, next) {
             console.log('Connect');
             var request = new mssql.Request();
 
-            var checkId = "SELECT * FROM tALU WHERE ALU_email = '" + id + "'";
+            var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + id + "'";
             var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + pw + "', '" + name + "', 'email');";
 
             request.query(checkId, function (err, result) {
@@ -169,7 +169,7 @@ passport.use(new LocalStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
 
-                var queryString = "SELECT * FROM tALU WHERE ALU_email = '" + username + "' AND ALU_pw = '" + password + "'";
+                var queryString = "SELECT * FROM tALU WHERE ALU_id = '" + username + "' AND ALU_pw = '" + password + "'";
 
                 request.query(queryString, function (err, result) {
                     if (err) console.log(err);
@@ -213,7 +213,7 @@ router.post('/emaillogin', function (req, res, next) {
                 // JWT 생성
                 var token = jwt.sign({
                     // 내용
-                    email: req.user.ALU_email,
+                    id: req.user.ALU_id,
                     pw: req.user.ALU_pw,
                     name: req.user.ALU_name,
                     type: req.user.ALU_type
@@ -261,8 +261,8 @@ passport.use(new NaverStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
     
-                var checkId = "SELECT * FROM tALU WHERE ALU_email = '" + user.email + "'";
-                var insertData = "INSERT INTO tALU VALUES ('" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
+                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
     
                 request.query(checkId, function (err, result) {
     
@@ -311,7 +311,7 @@ router.get('/naverlogin/callback', function (req, res, next) {
                 // JWT 생성
                 var token = jwt.sign({
                     // 내용
-                    email: user.email,
+                    id: user.id,
                     pw: '',
                     name: user.name,
                     type: user.provider
@@ -361,8 +361,8 @@ passport.use(new KakaoStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
     
-                var checkId = "SELECT * FROM tALU WHERE ALU_email = '" + user.email + "'";
-                var insertData = "INSERT INTO tALU VALUES ('" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
+                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
     
                 request.query(checkId, function (err, result) {
     
@@ -411,7 +411,7 @@ router.get('/kakaologin/callback', function (req, res, next) {
                 // JWT 생성
                 var token = jwt.sign({
                     // 내용
-                    email: user.email,
+                    id: user.id,
                     pw: '',
                     name: user.name,
                     type: user.provider
@@ -437,9 +437,9 @@ router.get('/kakaologin/callback', function (req, res, next) {
 
 // passport-facebook
 passport.use(new FacebookStrategy({
-    clientID: '197263938758683',
-    clientSecret: '35e7d0fdae77876b4156765f5bdd59f0',
-    callbackURL: "http://192.168.0.134:8087/users/facebooklogin/callback"
+    clientID: '872351713594449',
+    clientSecret: '1d63016dd325a43ce7c9a81ab5d8c3a1',
+    callbackURL: "https://192.168.0.134:443/users/facebooklogin/callback"
 },
     function (accessToken, refreshToken, profile, done) {
         console.log('passport-facebook!!');
@@ -462,6 +462,7 @@ passport.use(new FacebookStrategy({
 
 // 페이스북로그인
 router.get('/facebooklogin', passport.authenticate('facebook', {
+    scope: 'email',
     failureRedirect: '/login'
 }));
 
@@ -502,32 +503,58 @@ router.get('/facebooklogin/callback', function (req, res, next) {
 
 // passport-google
 passport.use(new GoogleStrategy({
-    clientID: '521321672704-fmsrtgp4l67klrs88g27htbk2haskkfs.apps.googleusercontent.com',
-    clientSecret: 't5R8uiWUDvj5lj6GaCEIhya8',
-    callbackURL: "http://192.168.0.134:8087/users/googlelogin/callback"
+    clientID: '706426410759-v8mjqnsi67efdprf0qsg6pm78ckjt7ie.apps.googleusercontent.com',
+    clientSecret: 'QxHrFf2R2sxV7JPP3hmEf0B_',
+    callbackURL: "http://localhost:8087/users/googlelogin/callback"    
 },
     function (accessToken, refreshToken, profile, done) {
-        console.log('passport-google!!');
-        console.log('accessToken : ' + accessToken);
-        console.log('refreshToken : ' + refreshToken);
-        console.log(profile);
 
-        var user = {
-            name: profile.username,
-            username: profile.id,
-            roles: ['authenticated'],
-            provider: 'google',
-            google: profile._json,
-        };
+        try {
+            console.log('passport-google!!');
 
-        console.log("user=", user);
-        return done(null, user);
+            var user = {
+                provider: profile.provider,
+                id: profile.id,
+                name: profile.displayName,
+                profile_image: profile.photos.value,
+                locale: profile._json.locale
+            };
+    
+            mssql.connect(config, function (err) {
+    
+                console.log('Connect');
+                var request = new mssql.Request();
+    
+                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
+    
+                request.query(checkId, function (err, result) {
+    
+                    if (result.rowsAffected[0] == 0) {
+    
+                        // 사용자 데이터 없음 -> 회원가입 후 로그인
+                        request.query(insertData, function (err, result) {
+    
+                            console.log('데이터 입력 후 구글 로그인합니다.');
+                            return done(null, user);
+                        })
+                    } else {
+                        // 사용자 데이터 있음 -> 로그인
+                        console.log('바로 구글 로그인합니다.');
+                        return done(null, user);
+                    }
+                })
+            });
+        }
+        catch (err) {
+            console.log(err);
+        }
     }
 ));
 
 // 구글로그인
 router.get('/googlelogin', passport.authenticate('google', {
-    scope: ['profile', 'email'],
+    scope: ['profile'],
     failureRedirect: '/login'
 }));
 
@@ -542,10 +569,13 @@ router.get('/googlelogin/callback', function (req, res, next) {
             req.logIn(user, function (err) {
                 console.log('google/callback user : ', user);
     
-                /* // JWT 생성
+                // JWT 생성
                 var token = jwt.sign({
                     // 내용
-                    user
+                    id: user.id,
+                    pw: '',
+                    name: user.name,
+                    type: user.provider
                 },
                     // 시크릿키(인증키)
                     secret_key
@@ -554,11 +584,11 @@ router.get('/googlelogin/callback', function (req, res, next) {
                         expiresIn: '365days'
                     });
                 console.log("token : ", token);
-    
+     
                 // JWT로 쿠키 생성
                 res.cookie("user", token, {
                     maxAge: 31536000000 // 1년
-                }); */
+                });
     
                 return res.redirect('/welcome');        
             });
@@ -575,6 +605,7 @@ router.post('/logout', function (req, res, next) {
 
 // JWT값 가져오기
 router.get('/getJWT', function (req, res, next) {
+    console.log(req);
     console.log(req.cookies.user);
     if (req.cookies.user == undefined) {
         // 쿠키에 user 없음
@@ -588,8 +619,8 @@ router.get('/getJWT', function (req, res, next) {
 
         if (logintype == 'email') {
             // 이메일 로그인인경우
-            // email, pw 가져와서 db에 있는 사용자인지 확인
-            var email = decoded.email;
+            // id, pw 가져와서 db에 있는 사용자인지 확인
+            var id = decoded.id;
             var pw = decoded.pw;
 
             try {
@@ -598,7 +629,7 @@ router.get('/getJWT', function (req, res, next) {
                     console.log('Connect');
                     var request = new mssql.Request();
 
-                    var checkUser = "SELECT * FROM tALU WHERE ALU_email = '" + email + "' AND ALU_pw = '" + pw + "'";
+                    var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + id + "' AND ALU_pw = '" + pw + "'";
                     request.query(checkUser, function (err, result) {
 
                         if (result.rowsAffected[0] == 0) {
@@ -616,31 +647,19 @@ router.get('/getJWT', function (req, res, next) {
             catch (err) {
                 console.log(err);
             }
-        } else if (logintype == 'naver'){
-            // 네이버 로그인인경우
+        } else {
+            // 네이버, 카카오, 구글 로그인인경우
+            // id 가져와서 db에 있는 사용자인지 확인
 
-            var email = decoded.email;
-            var name = decoded.name;
-            var result = getJWTsocial(email, name);
-
-            if (result == 'INCORRECT') {
-                res.json({ data: 'INCORRECT' });
-            } else {
-                res.json({ data: 'OK', name: decoded.name });
-            }
-
-        } else if (logintype == 'kakao'){
-            // 카카오 로그인인경우
-            
-            var email = decoded.email;
-            var name = decoded.name;
-            var result = getJWTsocial(email, name);
+            var id = decoded.id;
+            var result = getJWTsocial(id);
 
             if (result == 'INCORRECT') {
                 res.json({ data: 'INCORRECT' });
             } else {
                 res.json({ data: 'OK', name: decoded.name });
             }
+
         }
     }
 });
@@ -655,7 +674,7 @@ router.get('/', function (req, res, next) {
 module.exports = router;
 
 // 소셜로그인 JWT 가져와서 USER 확인
-function getJWTsocial(email, name) {
+function getJWTsocial(id) {
     console.log('getJWTsocial!!');
 
     try {
@@ -664,7 +683,7 @@ function getJWTsocial(email, name) {
             console.log('Connect');
             var request = new mssql.Request();
 
-            var checkUser = "SELECT * FROM tALU WHERE ALU_email = '" + email + "' AND ALU_name = '" + name + "'";
+            var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + id + "'";
             request.query(checkUser, function (err, result) {
 
                 if (result.rowsAffected[0] == 0) {

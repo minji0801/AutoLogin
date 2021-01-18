@@ -4,6 +4,7 @@ var fs = require('fs');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var cors = require('cors');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -18,6 +19,8 @@ const options = {
 };
 
 var app = express();
+
+app.use(cors());
 
 // view engine setup
 app.set('views', path.join(__dirname, '/views'));
@@ -64,20 +67,20 @@ app.use(function(err, req, res, next) {
 /////////////////////////// 통신부
 
 // http 8087
-var server = require('http').createServer(app);
-var io = require('socket.io')(server);
-server.listen(8087, function() {
+var serverHTTP = require('http').createServer(app);
+var io = require('socket.io')(serverHTTP);
+serverHTTP.listen(8087, function() {
     console.log('Socket IO server listening on port 8087');
 });
 
 // https 443
-/* var server = require('https').createServer(options, app);
+var serverHTTPS = require('https').createServer(options, app);
 
-var io = require('socket.io')(server);
+var io = require('socket.io')(serverHTTPS);
 
-server.listen(443, function() {
+serverHTTPS.listen(443, function() {
     console.log('Socket IO server listening on port 443');
-}); */
+});
 
 io.on('connection', function(socket) {
   console.log('Socket id ' + socket.id + 'Connected');
