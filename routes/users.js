@@ -12,7 +12,7 @@ const passport = require('passport')
     , NaverStrategy = require('passport-naver').Strategy
     , KakaoStrategy = require('passport-kakao').Strategy
     , FacebookStrategy = require('passport-facebook').Strategy
-    , GoogleStrategy = require('passport-google-oauth20').Strategy;
+    , GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 /* 여기까지 */
 
 const mssql = require('mssql');
@@ -42,12 +42,12 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    //"user": "test",
-    "user": "sa",
+    "user": "test",
+    // "user": "sa",
     "password": "qw12qw12",
     //"server": "192.168.137.1",
-    "server": "192.168.0.134",
-    // "server": "192.168.35.115",
+    // "server": "192.168.0.134",
+    "server": "192.168.35.17",
     //"server"    : "192.168.0.135",
     "port": 1433,
     "database": "aTEST",
@@ -439,7 +439,7 @@ router.get('/kakaologin/callback', function (req, res, next) {
 passport.use(new FacebookStrategy({
     clientID: '872351713594449',
     clientSecret: '1d63016dd325a43ce7c9a81ab5d8c3a1',
-    callbackURL: "https://192.168.0.134:443/users/facebooklogin/callback"
+    callbackURL: "https://192.168.0.134/users/facebooklogin/callback"
 },
     function (accessToken, refreshToken, profile, done) {
         console.log('passport-facebook!!');
@@ -462,7 +462,7 @@ passport.use(new FacebookStrategy({
 
 // 페이스북로그인
 router.get('/facebooklogin', passport.authenticate('facebook', {
-    scope: 'email',
+    //scope: 'email',
     failureRedirect: '/login'
 }));
 
@@ -516,7 +516,8 @@ passport.use(new GoogleStrategy({
                 provider: profile.provider,
                 id: profile.id,
                 name: profile.displayName,
-                profile_image: profile.photos.value,
+                email: profile.emails[0].value,
+                profile_image: profile.photos[0].value,
                 locale: profile._json.locale
             };
     
@@ -554,7 +555,7 @@ passport.use(new GoogleStrategy({
 
 // 구글로그인
 router.get('/googlelogin', passport.authenticate('google', {
-    scope: ['profile'],
+    scope: ['https://www.googleapis.com/auth/plus.login', 'email'],
     failureRedirect: '/login'
 }));
 
@@ -605,7 +606,7 @@ router.post('/logout', function (req, res, next) {
 
 // JWT값 가져오기
 router.get('/getJWT', function (req, res, next) {
-    console.log(req);
+    //console.log(req);
     console.log(req.cookies.user);
     if (req.cookies.user == undefined) {
         // 쿠키에 user 없음

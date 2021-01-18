@@ -31,12 +31,12 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    //"user": "test",
-    "user": "sa",
+    "user": "test",
+    // "user": "sa",
     "password": "qw12qw12",
     //"server": "192.168.137.1",
-    "server": "192.168.0.134",
-    // "server": "192.168.35.115",
+    // "server": "192.168.0.134",
+    "server": "192.168.35.17",
     //"server"    : "192.168.0.135",
     "port": 1433,
     "database": "aTEST",
