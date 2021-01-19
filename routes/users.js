@@ -3,6 +3,7 @@ var router = express.Router();
 
 /* 추가한 부분 */
 var app = express();
+const session = require('express-session');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
@@ -42,12 +43,12 @@ const config = {
     // "options"   : {
     //     "encrypt" : false
     // }
-    "user": "test",
-    // "user": "sa",
+    // "user": "test",
+    "user": "sa",
     "password": "qw12qw12",
     //"server": "192.168.137.1",
-    // "server": "192.168.0.134",
-    "server": "192.168.35.17",
+    "server": "192.168.0.134",
+    // "server": "192.168.35.17",
     //"server"    : "192.168.0.135",
     "port": 1433,
     "database": "aTEST",
@@ -119,22 +120,23 @@ router.post('/signup', function (req, res, next) {
     try {
         console.log('api/signup!!');
         console.log(req.body.name);
-        console.log(req.body.id);
+        console.log(req.body.email);
         console.log(req.body.pw);
 
-        var name = req.body.name;
-        var id = req.body.id;
+        var id = Math.random().toString(36).slice(2);
+        var email = req.body.email;
         var pw = req.body.pw;
+        var name = req.body.name;
 
         mssql.connect(config, function (err) {
 
             console.log('Connect');
             var request = new mssql.Request();
 
-            var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + id + "'";
-            var insertData = "INSERT INTO tALU VALUES ('" + id + "', '" + pw + "', '" + name + "', 'email');";
+            var checkEmail = "SELECT * FROM tALU WHERE ALU_email = '" + email + "'";
+            var insertData = "INSERT INTO tALU VALUES ('" + id + "', '"  + email + "', '" + pw + "', '" + name + "', 'email');";
 
-            request.query(checkId, function (err, result) {
+            request.query(checkEmail, function (err, result) {
 
                 if (result.rowsAffected[0] == 0) {
 
@@ -158,7 +160,7 @@ router.post('/signup', function (req, res, next) {
 
 // passport - username & password
 passport.use(new LocalStrategy({
-    usernameField: 'id',
+    usernameField: 'email',
     passwordField: 'pw'
 },
     function (username, password, done) {
@@ -169,7 +171,7 @@ passport.use(new LocalStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
 
-                var queryString = "SELECT * FROM tALU WHERE ALU_id = '" + username + "' AND ALU_pw = '" + password + "'";
+                var queryString = "SELECT * FROM tALU WHERE ALU_email = '" + username + "' AND ALU_pw = '" + password + "'";
 
                 request.query(queryString, function (err, result) {
                     if (err) console.log(err);
@@ -196,7 +198,8 @@ passport.use(new LocalStrategy({
 // 이메일로그인
 router.post('/emaillogin', function (req, res, next) {
     passport.authenticate('local', function (err, user, info) {
-        if (err) { return next(err); }
+        console.log('passport-local callback!');
+        
         if (!user) {
             // 로그인실패
             return res.redirect('/login');
@@ -208,22 +211,32 @@ router.post('/emaillogin', function (req, res, next) {
                 return next(err);
             } else {
                 // 로그인성공
-                console.log(req.user);
+                console.log('emaillogin/callback user : ', req.user);
+
+                // session input
+                req.session.id = req.user.ALU_id;
+                req.session.email = req.user.ALU_email;
+                req.session.pw = req.user.ALU_pw;
+                req.session.name = req.user.ALU_name;
+                req.session.type = req.user.ALU_type;
+                req.session.save();
 
                 // JWT 생성
                 var token = jwt.sign({
                     // 내용
                     id: req.user.ALU_id,
+                    email: req.user.ALU_email,
                     pw: req.user.ALU_pw,
                     name: req.user.ALU_name,
                     type: req.user.ALU_type
                 },
-                    // 시크릿키(인증키)
-                    secret_key
-                    , {
-                        // 옵션
-                        expiresIn: '365days'
-                    });
+                // 시크릿키(인증키)
+                secret_key
+                , {
+                    // 옵션
+                    expiresIn: '365days'
+                });
+
                 console.log("token : ", token);
 
                 // JWT로 쿠키 생성
@@ -245,15 +258,16 @@ passport.use(new NaverStrategy({
     function (accessToken, refreshToken, profile, done) {
         try {
             console.log('passport-naver!!');
+            console.log('naver-login-profile : ', profile);
 
             var user = { 
-                provider: profile.provider, 
                 id: profile.id, 
-                name: profile.displayName, 
                 email: profile.emails[0].value, 
-                profile_image: profile._json.profile_image,
+                name: profile.displayName, 
+                provider: profile.provider, 
+                /* profile_image: profile._json.profile_image,
                 age: profile._json.age,
-                birthday: profile._json.birthday
+                birthday: profile._json.birthday */
             }; 
     
             mssql.connect(config, function (err) {
@@ -261,10 +275,10 @@ passport.use(new NaverStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
     
-                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
-                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
+                var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "' AND ALU_type = '" + user.provider + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
     
-                request.query(checkId, function (err, result) {
+                request.query(checkUser, function (err, result) {
     
                     if (result.rowsAffected[0] == 0) {
     
@@ -290,6 +304,7 @@ passport.use(new NaverStrategy({
 
 // 네이버로그인
 router.get('/naverlogin', passport.authenticate('naver', {
+    session: false,
     failureRedirect: '/login'
 }));
 
@@ -306,26 +321,10 @@ router.get('/naverlogin/callback', function (req, res, next) {
         } else {
 
             req.logIn(user, function (err) {
-                console.log('naver/callback user : ', user);
-    
-                // JWT 생성
-                var token = jwt.sign({
-                    // 내용
-                    id: user.id,
-                    pw: '',
-                    name: user.name,
-                    type: user.provider
-                },
-                    // 시크릿키(인증키)
-                    secret_key
-                    , {
-                        // 옵션
-                        expiresIn: '365days'
-                    });
-                console.log("token : ", token);
+                console.log('naverlogin/callback user : ', user);
     
                 // JWT로 쿠키 생성
-                res.cookie("user", token, {
+                res.cookie("user", makeJWT(user), {
                     maxAge: 31536000000 // 1년
                 });
     
@@ -343,17 +342,18 @@ passport.use(new KakaoStrategy({
     function (accessToken, refreshToken, profile, done) {
         try {
             console.log('passport-kakao!!');
+            console.log('kakao-login-profile : ', profile);
 
             var user = {
-                provider: profile.provider,
                 id: profile.id,
-                name: profile.username,
-                profile_image: profile._json.kakao_account.profile.profile_image_url,
                 email: profile._json.kakao_account.email,
+                name: profile.username,
+                provider: profile.provider,
+                /* profile_image: profile._json.kakao_account.profile.profile_image_url,
                 age: profile._json.kakao_account.age_range,
                 birthday: profile._json.kakao_account.birthday,
                 birthday_type: profile._json.kakao_account.birthday_type,
-                gender: profile._json.kakao_account.gender
+                gender: profile._json.kakao_account.gender */
             };
     
             mssql.connect(config, function (err) {
@@ -361,10 +361,10 @@ passport.use(new KakaoStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
     
-                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
-                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
+                var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "' AND ALU_type = '" + user.provider + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
     
-                request.query(checkId, function (err, result) {
+                request.query(checkUser, function (err, result) {
     
                     if (result.rowsAffected[0] == 0) {
     
@@ -390,6 +390,7 @@ passport.use(new KakaoStrategy({
 
 // 카카오로그인
 router.get('/kakaologin', passport.authenticate('kakao', {
+    session: false,
     failureRedirect: '/login'
 }));
 
@@ -406,26 +407,10 @@ router.get('/kakaologin/callback', function (req, res, next) {
         } else {
 
             req.logIn(user, function (err) {
-                console.log('kakao/callback user : ', user);
-    
-                // JWT 생성
-                var token = jwt.sign({
-                    // 내용
-                    id: user.id,
-                    pw: '',
-                    name: user.name,
-                    type: user.provider
-                },
-                    // 시크릿키(인증키)
-                    secret_key
-                    , {
-                        // 옵션
-                        expiresIn: '365days'
-                    });
-                console.log("token : ", token);
+                console.log('kakaologin/callback user : ', user);
     
                 // JWT로 쿠키 생성
-                res.cookie("user", token, {
+                res.cookie("user", makeJWT(user), {
                     maxAge: 31536000000 // 1년
                 });
     
@@ -439,61 +424,77 @@ router.get('/kakaologin/callback', function (req, res, next) {
 passport.use(new FacebookStrategy({
     clientID: '872351713594449',
     clientSecret: '1d63016dd325a43ce7c9a81ab5d8c3a1',
-    callbackURL: "https://192.168.0.134/users/facebooklogin/callback"
+    callbackURL: "https://192.168.0.134/users/facebooklogin/callback",
+    profileFields: ['email', 'id', 'displayName', 'photos']
 },
     function (accessToken, refreshToken, profile, done) {
-        console.log('passport-facebook!!');
-        console.log('accessToken : ' + accessToken);
-        console.log('refreshToken : ' + refreshToken);
-        console.log(profile);
 
-        var user = {
-            name: profile.username,
-            username: profile.id,
-            roles: ['authenticated'],
-            provider: 'facebook',
-            kakao: profile._json,
-        };
+        try {
+            console.log('passport-facebook!!');
+            console.log('facebook-login-profile : ', profile);
 
-        console.log("user=", user);
-        return done(null, user);
+            var user = {
+                id: profile.id,
+                email: profile.emails[0].value,
+                name: profile.displayName,
+                provider: profile.provider,
+                //profile_image: profile.photos[0].value
+            };
+    
+            mssql.connect(config, function (err) {
+    
+                console.log('Connect');
+                var request = new mssql.Request();
+    
+                var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "' AND ALU_type = '" + user.provider + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
+    
+                request.query(checkUser, function (err, result) {
+    
+                    if (result.rowsAffected[0] == 0) {
+    
+                        // 사용자 데이터 없음 -> 회원가입 후 로그인
+                        request.query(insertData, function (err, result) {
+    
+                            console.log('데이터 입력 후 페이스북 로그인합니다.');
+                            return done(null, user);
+                        })
+                    } else {
+                        // 사용자 데이터 있음 -> 로그인
+                        console.log('바로 페이스북 로그인합니다.');
+                        return done(null, user);
+                    }
+                })
+            });
+        }
+        catch (err) {
+            console.log(err);
+        }
     }
 ));
 
 // 페이스북로그인
 router.get('/facebooklogin', passport.authenticate('facebook', {
-    //scope: 'email',
+    scope: ['email'],
+    session: false,
     failureRedirect: '/login'
 }));
 
 // 페이스북로그인 콜백
 router.get('/facebooklogin/callback', function (req, res, next) {
     passport.authenticate('facebook', function (err, user) {
-        console.log('passport-facebook callback!');
+        console.log('passport-facebook callback!!');
         if (!user) {
             console.log('no user');
             return res.redirect('/login'); 
         } else {
             req.logIn(user, function (err) {
-                console.log('facebook/callback user : ', user);
-    
-                /* // JWT 생성
-                var token = jwt.sign({
-                    // 내용
-                    user
-                },
-                    // 시크릿키(인증키)
-                    secret_key
-                    , {
-                        // 옵션
-                        expiresIn: '365days'
-                    });
-                console.log("token : ", token);
+                console.log('facebooklogin/callback user : ', user);
     
                 // JWT로 쿠키 생성
-                res.cookie("user", token, {
+                res.cookie("user", makeJWT(user), {
                     maxAge: 31536000000 // 1년
-                }); */
+                });
     
                 return res.redirect('/welcome');        
             });
@@ -511,14 +512,15 @@ passport.use(new GoogleStrategy({
 
         try {
             console.log('passport-google!!');
+            console.log('google-login-profile : ', profile);
 
             var user = {
-                provider: profile.provider,
                 id: profile.id,
-                name: profile.displayName,
                 email: profile.emails[0].value,
-                profile_image: profile.photos[0].value,
-                locale: profile._json.locale
+                name: profile.displayName,
+                provider: profile.provider,
+                /* profile_image: profile.photos[0].value,
+                locale: profile._json.locale */
             };
     
             mssql.connect(config, function (err) {
@@ -526,10 +528,10 @@ passport.use(new GoogleStrategy({
                 console.log('Connect');
                 var request = new mssql.Request();
     
-                var checkId = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "'";
-                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '', '" + user.name + "', '" + user.provider + "');";
+                var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + user.id + "' AND ALU_type = '" + user.provider + "'";
+                var insertData = "INSERT INTO tALU VALUES ('" + user.id + "', '" + user.email + "', '', '" + user.name + "', '" + user.provider + "');";
     
-                request.query(checkId, function (err, result) {
+                request.query(checkUser, function (err, result) {
     
                     if (result.rowsAffected[0] == 0) {
     
@@ -556,6 +558,7 @@ passport.use(new GoogleStrategy({
 // 구글로그인
 router.get('/googlelogin', passport.authenticate('google', {
     scope: ['https://www.googleapis.com/auth/plus.login', 'email'],
+    session: false,
     failureRedirect: '/login'
 }));
 
@@ -563,31 +566,19 @@ router.get('/googlelogin', passport.authenticate('google', {
 router.get('/googlelogin/callback', function (req, res, next) {
     passport.authenticate('google', function (err, user) {
         console.log('passport-google callback!');
+
         if (!user) {
+
             console.log('no user');
             return res.redirect('/login'); 
+
         } else {
+
             req.logIn(user, function (err) {
-                console.log('google/callback user : ', user);
+                console.log('googlelogin/callback user : ', user);
     
-                // JWT 생성
-                var token = jwt.sign({
-                    // 내용
-                    id: user.id,
-                    pw: '',
-                    name: user.name,
-                    type: user.provider
-                },
-                    // 시크릿키(인증키)
-                    secret_key
-                    , {
-                        // 옵션
-                        expiresIn: '365days'
-                    });
-                console.log("token : ", token);
-     
                 // JWT로 쿠키 생성
-                res.cookie("user", token, {
+                res.cookie("user", makeJWT(user), {
                     maxAge: 31536000000 // 1년
                 });
     
@@ -599,6 +590,7 @@ router.get('/googlelogin/callback', function (req, res, next) {
 
 // 로그아웃
 router.post('/logout', function (req, res, next) {
+
     // 쿠키 삭제
     res.clearCookie('user');
     res.redirect('/login');
@@ -606,16 +598,21 @@ router.post('/logout', function (req, res, next) {
 
 // JWT값 가져오기
 router.get('/getJWT', function (req, res, next) {
-    //console.log(req);
+    
     console.log(req.cookies.user);
+
     if (req.cookies.user == undefined) {
+
         // 쿠키에 user 없음
         res.json({ data: 'NO' });
 
     } else {
+
         // 쿠키에 user 있음
         var decoded = jwt.verify(req.cookies.user, secret_key);
+
         console.log(decoded);
+
         var logintype = decoded.type;
 
         if (logintype == 'email') {
@@ -665,7 +662,70 @@ router.get('/getJWT', function (req, res, next) {
     }
 });
 
+/* router.get('/getSession', function (req, res, next) {
+    
+    console.log(req);
 
+    if (req.cookies.user == undefined) {
+
+        // 쿠키에 user 없음
+        res.json({ data: 'NO' });
+
+    } else {
+
+        // 쿠키에 user 있음
+        var decoded = jwt.verify(req.cookies.user, secret_key);
+
+        console.log(decoded);
+
+        var logintype = decoded.type;
+
+        if (logintype == 'email') {
+            // 이메일 로그인인경우
+            // id, pw 가져와서 db에 있는 사용자인지 확인
+            var id = decoded.id;
+            var pw = decoded.pw;
+
+            try {
+                mssql.connect(config, function (err) {
+
+                    console.log('Connect');
+                    var request = new mssql.Request();
+
+                    var checkUser = "SELECT * FROM tALU WHERE ALU_id = '" + id + "' AND ALU_pw = '" + pw + "'";
+                    request.query(checkUser, function (err, result) {
+
+                        if (result.rowsAffected[0] == 0) {
+                            // db에 없는 user -> 로그인 불가능
+                            res.json({ data: 'INCORRECT' });
+
+                        } else {
+                            // user 존재 -> 로그인 가능
+                            console.log('user 쿠키 있음!');
+                            res.json({ data: 'OK', name: decoded.name});
+                        }
+                    })
+                });
+            }
+            catch (err) {
+                console.log(err);
+            }
+        } else {
+            // 네이버, 카카오, 구글 로그인인경우
+            // id 가져와서 db에 있는 사용자인지 확인
+
+            var id = decoded.id;
+            var result = getJWTsocial(id);
+
+            if (result == 'INCORRECT') {
+                res.json({ data: 'INCORRECT' });
+            } else {
+                res.json({ data: 'OK', name: decoded.name });
+            }
+
+        }
+    }
+}); */
 
 /* GET users listing. */
 router.get('/', function (req, res, next) {
@@ -676,6 +736,7 @@ module.exports = router;
 
 // 소셜로그인 JWT 가져와서 USER 확인
 function getJWTsocial(id) {
+
     console.log('getJWTsocial!!');
 
     try {
@@ -702,4 +763,26 @@ function getJWTsocial(id) {
     catch (err) {
         console.log(err);
     }
+}
+
+function makeJWT(user) {
+
+    // JWT 생성
+    var token = jwt.sign({
+        // 내용
+        id: user.id,
+        email: user.email,
+        pw: user.pw,
+        name: user.name,
+        type: user.provider
+    },
+    // 시크릿키(인증키)
+    secret_key
+    , {
+        // 옵션
+        expiresIn: '365days'
+    });
+
+    console.log("token : ", token);
+    return token;
 }
